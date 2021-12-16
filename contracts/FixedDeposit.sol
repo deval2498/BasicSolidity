@@ -1,39 +1,27 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: Unlicense
 
-pragma solidity >=0.7.0 <0.9.0;
-
+pragma solidity ^0.8.4;
+import './ERC20.sol';
 
 contract FixedDeposit {
-    uint256 public interest; 
     mapping(address => uint256) public balance;
-    mapping(address => uint256) public timefor;
-    uint256 public deadline;
-    constructor() payable {
-        balance[address(this)] = 10000000 ;
-    }
-    function interestPaid() public payable {
-        interest = timefor[msg.sender];
-        balance[msg.sender] = balance[msg.sender] + interest;
-    }
+    event Received(address _from, uint256 _amount);
+    event Transferred(address _to, uint256 _amount);
 
 
-    function deposit(uint256 _amount, uint256 _TimePeriod) public payable {
+    receive() external payable {
+        balance[address(this)] += msg.value;
+        emit Received(msg.sender,msg.value);
+    }
+
+    function deposit(uint256 _amount) public {
         require(balance[msg.sender] == 0, 'You have already made a deposit!');
-        balance[msg.sender] = _amount;
-        timefor[msg.sender] = _TimePeriod;
-        balance[address(this)] += _amount;
-        deadline = block.timestamp + timefor[msg.sender];
-
+        balance[msg.sender] += _amount;
     }
 
-    function withdraw(address payable _addr) public payable {
-        require(block.timestamp >= deadline, 'Time limit not reached!');
-        require(msg.sender == _addr, 'You are not the owner!');
-        interestPaid();
-        balance[address(this)] -= balance[msg.sender];
-    }
-
-    function balanceOf(address _addr) public view returns(uint256) {
-        return balance[_addr];
+    function withdraw(ERC20 token,address _to) public {
+        token.transfer(_to ,balance[_to]);
+        emit Transferred(_to,balance[_to]);
     }
 }
+    
